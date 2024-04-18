@@ -42,7 +42,7 @@ require([
   // Population Feature Layer
   const populationLayer = new FeatureLayer({
     url: "https://services9.arcgis.com/QrCXNBwrECXYB95b/arcgis/rest/services/casa_population1/FeatureServer/0",
-    outFields: ["PREFECTURE","TOTAL1994", "TOTAL2004","MÉNAGES200"],
+    outFields: ["COMMUNE_AR","PREFECTURE","PREFECTU_1","TOTAL1994", "TOTAL2004","MÉNAGES200"],
     popupTemplate: popupPopulation
   });
 
@@ -56,7 +56,9 @@ require([
     "PREFECTURE = 'PROVINCE DE MEDIOUNA'",
     "PLAN_AMENA = 'PA HOMOLOGUE'",
   ];
-  const sqlExpressionPopulation = "TOTAL2004 > 100000 and MÉNAGES200> 30000";
+  const sqlExpressionPopulation = "TOTAL2004 > 100000 ";
+  const sqlExpressionPopulation2 = " MÉNAGES200 > 30000";
+
 
 
   // Create a select element to hold SQL expressions
@@ -67,58 +69,30 @@ require([
     option.innerHTML = sql === "Shape_Area >= 0" ? "Tous les couches" : sql;
     selectFilter.appendChild(option);
   });
+
   let optionPopulation = document.createElement("option");
 optionPopulation.value = sqlExpressionPopulation;
-optionPopulation.innerHTML = "Population 2004 > 100,000 and MENAGE 2004 > 3000";
+optionPopulation.innerHTML = "Population 2004 > 100,000";
 selectFilter.appendChild(optionPopulation);
 
-
-
-  // Add the select element to the view
+let optionPopulation2= document.createElement("option");
+optionPopulation2.value = sqlExpressionPopulation2;
+optionPopulation2.innerHTML = "MENAGE 2004 > 30000";
+selectFilter.appendChild(optionPopulation2);
   view.ui.add(selectFilter, "top-right");
 
-  // Function to set the filter on the feature layer based on selected SQL expression
-  function setFeatureLayerFilter(expression) {
-    communesLayer.definitionExpression = expression;
-    if (expression.includes("TOTAL2004")) {  // Check if the expression involves population data
-      populationLayer.definitionExpression = expression;
-    } else {
-      populationLayer.definitionExpression = "";  // Reset population layer if not relevant
-    }
-  }
 
-  // Event listener for select element changes
+
   selectFilter.addEventListener('change', function(event) {
     const selectedValue = event.target.value;
   
-    // Reset both layers' definition expression
     communesLayer.definitionExpression = "";
     populationLayer.definitionExpression = "";
   
-    // Check if the selected value is for the population layer
-    if (selectedValue === sqlExpressionPopulation) {
+    if (selectedValue === sqlExpressionPopulation || selectedValue === sqlExpressionPopulation2) {
       populationLayer.definitionExpression = selectedValue;
-      populationLayer.queryFeatures({
-        where: selectedValue,
-        returnGeometry: false,
-        outFields: ["PREFECTURE"]
-      })
-      .then(function(results) {
-        // Extract PREFECTURE values and create a list
-        const prefectures = results.features.map(feature => feature.attributes.PREFECTURE);
-        // Create a unique list if necessary
-        const uniquePrefectures = [...new Set(prefectures)];
-        // Construct an SQL expression for the communesLayer
-        const communesWhereClause = uniquePrefectures.map(prefecture => `'${prefecture}'`).join(",");
-        const sqlCommunes = `PREFECTURE IN (${communesWhereClause})`;
-        // Apply the filter to the communesLayer
-        communesLayer.definitionExpression = sqlCommunes;
-      })
-      .catch(function(error) {
-        console.error("Error querying population layer:", error);
-      });
+    
     } else {
-      // If not, it's for the communes layer
       communesLayer.definitionExpression = selectedValue;
     }
   });
