@@ -1,3 +1,4 @@
+
 require([
   "esri/config",
   "esri/Map",
@@ -38,6 +39,7 @@ require([
 
   // SQL expressions for filtering
   const sqlExpressions = [
+    "Shape_Area>=0",
     "Shape_Area < 5000000",
     "PREFECTURE = 'PROVINCE DE MEDIOUNA'",
     "PLAN_AMENA = 'PA HOMOLOGUE'"
@@ -46,12 +48,21 @@ require([
   // Create a select element to hold SQL expressions
   const selectFilter = document.createElement("select");
   sqlExpressions.forEach(function(sql) {
+    if(sql=== "Shape_Area>=0"){
+      let option = document.createElement("option");
+      option.value = sql;
+      option.innerHTML = "Tous les couches";
+      selectFilter.appendChild(option);
+  
+    }
+    else{
     let option = document.createElement("option");
     option.value = sql;
     option.innerHTML = sql;
     selectFilter.appendChild(option);
+  }
   });
-
+ 
   // Add the select element to the view
   view.ui.add(selectFilter, "top-right");
 
