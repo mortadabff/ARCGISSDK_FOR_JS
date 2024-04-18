@@ -95,6 +95,77 @@ selectFilter.appendChild(optionPopulation2);
     } else {
       communesLayer.definitionExpression = selectedValue;
     }
+
   });
 
-});
+
+    /// SQL QUERY 
+    const parcelLayerSQL = [
+      "-- Critère de recherche --",
+      "PREFECTURE='PREFECTURE DE CASABLANCA'",
+      "COMMUNE_AR='MUNICIPALITE BOUSKOURA'",
+      "PLAN_AMENA='PA ENQUETE PUBLIQUE'",
+      "Shape_Area>40000000",
+      "PREFECTURE='PROVINCE DE NOUACEUR' and PLAN_AMENA='PA ENQUETE PUBLIQUE'"
+    ];
+  
+    // Élément Select pour les requêtes SQL
+    const sqlSelect = document.createElement("select");
+    parcelLayerSQL.forEach(function(query) {
+      let option = document.createElement("option");
+      option.innerHTML = query;
+      option.value = query === "-- Critère de recherche --" ? "" : query; // Pas de filtre pour la première option
+      sqlSelect.appendChild(option);
+    });
+    view.ui.add(sqlSelect, "bottom-right");
+  
+    // Fonction pour exécuter la requête SQL et afficher les résultats
+    function queryFeatureLayer(whereClause) {
+      const parcelQuery = {
+        where: whereClause,
+        geometry: view.extent,
+        outFields: ["PREFECTURE", "COMMUNE_AR", "PLAN_AMENA", "Shape_Area"],
+        returnGeometry: true
+      };
+  
+      communesLayer.queryFeatures(parcelQuery).then((results) => {
+        displayResults(results);
+      }).catch((error) => {
+        console.error(error);
+      });
+    }
+  
+    // Fonction pour afficher les résultats de la requête
+    function displayResults(results) {
+        // Create a blue polygon
+        const symbol = {
+        type: "simple-fill",
+        color: [ 226, 135, 67 ],
+        outline: {
+        color: "yellow",
+        width: 1
+        }
+      };
+      
+      results.features.forEach((feature) => {
+        feature.symbol = symbol;
+        feature.popupTemplate = { // Définition du popupTemplate
+          title: "Commune {COMMUNE_AR}",
+          content: "Prefecture : {PREFECTURE} <br> Commune : {COMMUNE_AR} <br> Plan Aménagement : {PLAN_AMENA} <br> Surface : {Shape_Area}"
+        };
+        view.graphics.add(feature);
+      });
+    }
+  
+    // Mise à jour de l'écouteur d'événements pour le Select
+    sqlSelect.addEventListener('change', function(event) {
+      const whereClause = event.target.value;
+      if (whereClause === "-- Critère de recherche --") {
+        
+        view.graphics.removeAll();
+        view.popup.close();
+      } else {
+        queryFeatureLayer(whereClause);
+      }
+    });
+  });
