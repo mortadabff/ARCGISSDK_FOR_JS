@@ -68,7 +68,7 @@ require([
     Description: "Un graphic point"
   };
 
-  const popupTemplate = {
+  const popupPoint = {
     title: "{Nom}",
     content: "{Description}"
   };
@@ -77,7 +77,7 @@ require([
     geometry: point,
     symbol: symbol,
     attributes: attributes,
-    popupTemplate: popupTemplate
+    popupTemplate: popupPoint
   });
 
   graphicsLayer.add(pointGraphic);
