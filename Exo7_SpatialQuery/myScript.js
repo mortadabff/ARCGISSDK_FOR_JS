@@ -30,10 +30,18 @@ require([
 
   view.ui.add(basemapToggle, "bottom-right");
 
+  // communes Feature Layer 
+  const popupCommune ={
+    title: "Commune  Data",
+    content:"PREFECTURE : {PREFECTURE} ,  Communes : {COMMUNE_AR} , Surface : {Shape_Area}"
+    };
+
   // Communes Feature Layer
   const communesLayer = new FeatureLayer({
     url: "https://services9.arcgis.com/QrCXNBwrECXYB95b/arcgis/rest/services/communes/FeatureServer/0",
-    outFields: ["PREFECTURE", "COMMUNE_AR", "Shape_Area"]
+    outFields: ["PREFECTURE", "COMMUNE_AR", "Shape_Area"],
+    popupTemplate: popupCommune
+
   });
 
   const popupPopulation = {
@@ -51,19 +59,20 @@ require([
   map.add(communesLayer); 
   map.add(populationLayer);
 
-  // SQL expressions for filtering
+  // SQL expressions pour les filtres (filters) : couche commune
   const sqlExpressions = [
     "Shape_Area >= 0",
     "Shape_Area < 5000000",
     "PREFECTURE = 'PROVINCE DE MEDIOUNA'",
     "PLAN_AMENA = 'PA HOMOLOGUE'",
   ];
+    // SQL expressions pour les filtres (filters) : couche population
   const sqlExpressionPopulation = "TOTAL2004 > 100000 ";
   const sqlExpressionPopulation2 = " MÉNAGES200 > 30000";
 
 
 
-  // Create a select element to hold SQL expressions
+  // Create a select element to hold SQL expressions : création d'un élement select , dans lequel on va mettre les expressions sql de filtres
   const selectFilter = document.createElement("select");
   sqlExpressions.forEach(function(sql) {
     let option = document.createElement("option");
@@ -71,8 +80,8 @@ require([
     option.innerHTML = sql === "Shape_Area >= 0" ? "Tous les couches" : sql;
     selectFilter.appendChild(option);
   });
-
-  let optionPopulation = document.createElement("option");
+ // Ajouter les expressions de filtrage de la couche population
+let optionPopulation = document.createElement("option");
 optionPopulation.value = sqlExpressionPopulation;
 optionPopulation.innerHTML = "Population 2004 > 100,000";
 selectFilter.appendChild(optionPopulation);
