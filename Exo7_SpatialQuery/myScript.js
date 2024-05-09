@@ -9,7 +9,8 @@ require([
 ], function(
   esriConfig, Map, MapView, BasemapToggle, FeatureLayer,GraphicsLayer,Sketch
 ) {
-  
+  ///Part 1:  API configuration , add layers and basemap 
+
   esriConfig.apiKey = "AAPK7324697cbd7848de9b9a3ec4079db8ecvHN4GtuWJHgu6ndHccXKf0XdBDRP4W4PVbdn-TSi8E5xsXU7AMzVXVWDOzEsCkYy";
 
   const map = new Map({
@@ -59,6 +60,11 @@ require([
   map.add(communesLayer); 
   map.add(populationLayer);
 
+
+
+
+///Part 2 :  Filters 
+
   // SQL expressions pour les filtres (filters) : couche commune
   const sqlExpressions = [
     "Shape_Area >= 0",
@@ -70,8 +76,6 @@ require([
   const sqlExpressionPopulation = "TOTAL2004 > 100000 ";
   const sqlExpressionPopulation2 = " MÉNAGES200 > 30000";
 
-
-
   // Create a select element to hold SQL expressions : création d'un élement select , dans lequel on va mettre les expressions sql de filtres
   const selectFilter = document.createElement("select");
   sqlExpressions.forEach(function(sql) {
@@ -81,19 +85,18 @@ require([
     selectFilter.appendChild(option);
   });
  // Ajouter les expressions de filtrage de la couche population
-let optionPopulation = document.createElement("option");
-optionPopulation.value = sqlExpressionPopulation;
-optionPopulation.innerHTML = "Population 2004 > 100,000";
-selectFilter.appendChild(optionPopulation);
+  let optionPopulation = document.createElement("option");
+  optionPopulation.value = sqlExpressionPopulation;
+  optionPopulation.innerHTML = "Population 2004 > 100,000";
+  selectFilter.appendChild(optionPopulation);
 
-let optionPopulation2= document.createElement("option");
-optionPopulation2.value = sqlExpressionPopulation2;
-optionPopulation2.innerHTML = "MENAGE 2004 > 30000";
-selectFilter.appendChild(optionPopulation2);
+  let optionPopulation2= document.createElement("option");
+  optionPopulation2.value = sqlExpressionPopulation2;
+  optionPopulation2.innerHTML = "MENAGE 2004 > 30000";
+  selectFilter.appendChild(optionPopulation2);
   view.ui.add(selectFilter, "top-right");
 
-
-
+// Add a listener for the select element (Ajouter une event listener au filtre)
   selectFilter.addEventListener('change', function(event) {
     const selectedValue = event.target.value;
   
@@ -106,11 +109,12 @@ selectFilter.appendChild(optionPopulation2);
     } else {
       communesLayer.definitionExpression = selectedValue;
     }
-
   });
 
 
-    /// SQL QUERY 
+
+
+///Parte 3 :  SQL QUERY 
     const parcelLayerSQL = [
       "-- Critère de recherche --",
       "PREFECTURE='PREFECTURE DE CASABLANCA'",
@@ -119,8 +123,8 @@ selectFilter.appendChild(optionPopulation2);
       "Shape_Area>40000000",
       "PREFECTURE='PROVINCE DE NOUACEUR' and PLAN_AMENA='PA ENQUETE PUBLIQUE'"
     ];
-  
-    // Élément Select pour les requêtes SQL
+
+  // Élément Select pour les requêtes SQL
     const sqlSelect = document.createElement("select");
     parcelLayerSQL.forEach(function(query) {
       let option = document.createElement("option");
