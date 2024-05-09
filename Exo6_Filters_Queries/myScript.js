@@ -123,7 +123,6 @@ require([
       "Shape_Area>40000000",
       "PREFECTURE='PROVINCE DE NOUACEUR' and PLAN_AMENA='PA ENQUETE PUBLIQUE'"
     ];
-
   // Élément Select pour les requêtes SQL
     const sqlSelect = document.createElement("select");
     parcelLayerSQL.forEach(function(query) {
