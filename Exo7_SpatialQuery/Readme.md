@@ -1,4 +1,4 @@
-#Differences between : *Filters*, *Queries*  , *Spatial Query*
+# Differences between : *Filters*, *Queries*  , *Spatial Query*
 
 1. Difference between Filters and Queries : 
 
