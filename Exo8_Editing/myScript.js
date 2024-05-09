@@ -1,3 +1,4 @@
+
 require([
   "esri/config",
   "esri/Map",
@@ -7,6 +8,7 @@ require([
 ], function(esriConfig, Map, MapView, FeatureLayer, Editor) {
   // Configuration de l'API
   esriConfig.apiKey = "AAPK7324697cbd7848de9b9a3ec4079db8ecvHN4GtuWJHgu6ndHccXKf0XdBDRP4W4PVbdn-TSi8E5xsXU7AMzVXVWDOzEsCkYy";
+  
 
   // Création de la carte
   const map = new Map({
