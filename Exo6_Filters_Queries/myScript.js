@@ -112,6 +112,9 @@ require([
   });
 
 
+  const featureLayer = new FeatureLayer({
+    url: "https://services9.arcgis.com/QrCXNBwrECXYB95b/arcgis/rest/services/communes/FeatureServer/0",
+    });
 
 
 ///Parte 3 :  SQL QUERY 
@@ -123,7 +126,10 @@ require([
       "Shape_Area>40000000",
       "PREFECTURE='PROVINCE DE NOUACEUR' and PLAN_AMENA='PA ENQUETE PUBLIQUE'"
     ];
+    let whereClause = parcelLayerSQL[0];
+
   // Élément Select pour les requêtes SQL
+
     const sqlSelect = document.createElement("select");
     parcelLayerSQL.forEach(function(query) {
       let option = document.createElement("option");
@@ -133,7 +139,11 @@ require([
     });
     view.ui.add(sqlSelect, "bottom-right");
   
-    // Fonction pour exécuter la requête SQL et afficher les résultats
+
+   
+   
+
+      
     function queryFeatureLayer(whereClause) {
       const parcelQuery = {
         where: whereClause,
@@ -149,15 +159,18 @@ require([
       });
     }
   
+    
+    
     // Fonction pour afficher les résultats de la requête
     function displayResults(results) {
         // Create a blue polygon
         const symbol = {
         type: "simple-fill",
-        color: [ 226, 135, 67 ],
+        color: [ 20, 130, 200, 0.5 ],
         outline: {
-        color: "yellow",
-        width: 1
+          color: "white",
+          width: 0.5
+
         }
       };
       
@@ -183,69 +196,6 @@ require([
       }
     });
 
-
-
-    ///
-    const graphicsLayerSketch = new GraphicsLayer();
-    map.add(graphicsLayerSketch);
-  
-    // Créer et ajouter le widget Sketch à la vue
-    const sketch = new Sketch({
-      layer: graphicsLayerSketch,
-      view: view,
-      creationMode: "update"
-    });
-    view.ui.add(sketch, "top-right");
-  
-    // Fonction pour exécuter la requête spatiale sur la couche des communes
-    function queryFeaturelayer(geometry) {
-      const communeQuery = {
-        spatialRelationship: "intersects",
-        geometry: geometry,
-        outFields: ["PREFECTURE", "COMMUNE_AR", "PLAN_AMENA", "Shape_Area"],
-        returnGeometry: true
-      };
-  
-      // Exécuter la requête et afficher les résultats
-      communesLayer.queryFeatures(communeQuery).then((results) => {
-        displayResults(results);
-      }).catch((error) => {
-        console.error(error);
-      });
-    }
-  
-    // Fonction pour afficher les résultats de la requête spatiale
-    function displayResults(results) {
-      const symbol = {
-        type: "simple-fill",
-        color: [ 20, 130, 200, 0.5 ],
-        outline: {
-          color: "white",
-          width: 0.5
-        }
-      };
-      
-      view.graphics.removeAll();
-      results.features.forEach((feature) => {
-        feature.symbol = symbol;
-        feature.popupTemplate = {
-          title: "Commune {COMMUNE_AR}",
-          content: "Prefecture : {PREFECTURE} <br> Commune : {COMMUNE_AR} <br> Plan Aménagement : {PLAN_AMENA} <br> Surface : {Shape_Area}"
-        };
-        view.graphics.add(feature);
-      });
-    }
-  
-    // Écouteur d'événements pour le Sketch
-    sketch.on("update", (event) => {
-      if (event.state === "start") {
-        queryFeaturelayer(event.graphics[0].geometry);
-      }
-      if (event.state === "complete") {
-        graphicsLayerSketch.remove(event.graphics[0]);
-      }
-      if (event.toolEventInfo && (event.toolEventInfo.type === "scale-stop" || event.toolEventInfo.type === "reshape-stop" || event.toolEventInfo.type === "move-stop")) {
-        queryFeaturelayer(event.graphics[0].geometry);
-      }
-    });
-  });
+queryFeatureLayer(view.extent);
+   
+});
