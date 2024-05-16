@@ -6,8 +6,9 @@ require([
   "esri/layers/GraphicsLayer",
   "esri/widgets/Editor",
   "esri/widgets/Sketch/SketchViewModel",
-  "esri/Graphic"
-], function(esriConfig, Map, MapView, FeatureLayer, GraphicsLayer, Editor, SketchViewModel, Graphic) {
+  "esri/Graphic",
+  "esri/widgets/FeatureForm",
+], function(esriConfig, Map, MapView, FeatureLayer, GraphicsLayer, Editor, SketchViewModel, Graphic,FeatureForm) {
   // Configuration de l'API
   esriConfig.apiKey = "AAPK7324697cbd7848de9b9a3ec4079db8ecvHN4GtuWJHgu6ndHccXKf0XdBDRP4W4PVbdn-TSi8E5xsXU7AMzVXVWDOzEsCkYy";
   
@@ -130,4 +131,55 @@ require([
       }
     });
   });
+
+  
+
+  //// EDIT ATTRIBUTES
+  // Création du FeatureForm
+  const featureForm = new FeatureForm({
+    container: "form",
+    layer: communeLayer,
+    groupDisplay: "sequential"
+  });
+
+  const featureLayer = new FeatureLayer({
+    url: "https://services9.arcgis.com/QrCXNBwrECXYB95b/arcgis/rest/services/communes/FeatureServer/0",
+    outFields: ["*"],
+    formTemplate: { 
+
+    title: "Etat d'avncement des travaux",
+    description: "Saisir les information sur les travaux",
+    elements: [{
+    // Autocasts to new GroupElement
+    type: "group",
+    label: "Secteur Administratif",
+    description: "lieu du site",
+    elements: [{ // Autocasts to new FieldElement
+    type: "field",
+    fieldName: "PREFECTURE",
+    label: "PREFECTURE"
+    },
+    {
+    type: "field",
+    fieldName: "COMMUNE_AR",
+    label: "Commune/Arrondissement"
+    }
+    ]
+    }, // end of first group element
+    {
+    type: "group",
+    label: "Information sur le plan d'aménagement",
+    description: "PLAN_AMENA",
+    elements: [
+    {
+  type: "field",
+  fieldName: "PLAN_AMENA",
+  label: "Plan aménagement "
+  },
+]
+}
+],
+}, // end of form template elements
+});
+
 });
