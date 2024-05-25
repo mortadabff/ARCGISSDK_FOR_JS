@@ -1,3 +1,5 @@
+//import { apiKey1 } from './config.js';
+
 require([
     "esri/config",
     "esri/Map",

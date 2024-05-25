@@ -1,0 +1,7 @@
+Comment créer une APP .NET MVC sur VS code : 
+1. Téléchargez et installez le .NET SDK depuis dotnet.microsoft.com/download.
+2. Installer C# extension by OmniSharp sur VS Code 
+3. Tapeze la commande  :
+- dotnet new mvc -n MyMvcApp
+4. ouvrir le dossier du projet en tapant :
+- code MyMvcApp
