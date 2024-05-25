@@ -1,1 +1,25 @@
-wwwroot/Program.cs
+# Ignorer les dossiers de construction
+bin/
+obj/
+
+# Ignorer les fichiers de configuration utilisateur
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Ignorer les résultats de build d'ASP.NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Ignorer les fichiers de configuration
+appsettings.Development.json
+appsettings.Local.json
+secrets.json
+
+# Ignorer les logs
+*.log
+
+# Ignorer le fichier spécifique dans wwwroot
+wwwroot/config.js
