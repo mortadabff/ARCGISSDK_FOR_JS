@@ -1,3 +1,5 @@
+import { apiKey1 } from '../Ressources/config.js';
+
 require([
     "esri/config",
     "esri/Map",
@@ -7,7 +9,7 @@ require([
     "esri/PopupTemplate"
   ], function(esriConfig, Map, MapView, BasemapToggle, FeatureLayer, PopupTemplate) {
     
-    esriConfig.apiKey = "AAPK7324697cbd7848de9b9a3ec4079db8ecvHN4GtuWJHgu6ndHccXKf0XdBDRP4W4PVbdn-TSi8E5xsXU7AMzVXVWDOzEsCkYy";
+    esriConfig.apiKey = apiKey1;
 
     const map = new Map({
       basemap: "arcgis-topographic"

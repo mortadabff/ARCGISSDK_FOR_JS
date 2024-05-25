@@ -1,3 +1,5 @@
+import { apiKey1 } from '../Ressources/config.js';
+
 require([
   "esri/config",
   "esri/Map",
@@ -9,7 +11,7 @@ require([
   "esri/Graphic"
 ], function(esriConfig, Map, MapView, FeatureLayer, GraphicsLayer, Editor, SketchViewModel, Graphic) {
   // Configuration de l'API
-  esriConfig.apiKey = "AAPK7324697cbd7848de9b9a3ec4079db8ecvHN4GtuWJHgu6ndHccXKf0XdBDRP4W4PVbdn-TSi8E5xsXU7AMzVXVWDOzEsCkYy";
+  esriConfig.apiKey =apiKey1;
   
   // Création de la carte
   const map = new Map({
