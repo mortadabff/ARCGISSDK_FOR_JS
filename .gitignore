@@ -17,9 +17,10 @@ artifacts/
 appsettings.Development.json
 appsettings.Local.json
 secrets.json
+config.js
 
 # Ignorer les logs
 *.log
 
 # Ignorer le fichier spécifique dans wwwroot
-wwwroot/config.js
+wwwroot/Program.js
