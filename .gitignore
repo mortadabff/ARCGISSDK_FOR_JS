@@ -23,4 +23,4 @@ config.js
 *.log
 
 # Ignorer le fichier spécifique dans wwwroot
-wwwroot/Program.js
+wwwroot/Program.cs
