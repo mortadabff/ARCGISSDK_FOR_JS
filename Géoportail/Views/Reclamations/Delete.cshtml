@@ -1,0 +1,79 @@
+﻿@model Géoportail.Models.Reclamatiosn
+
+@{
+    ViewData["Title"] = "Delete";
+}
+
+<h1>Supprimer la réclamation</h1>
+
+<div id="DeleteReclamationsMap" style="padding: 0;margin: 0;width: 90%;height: 400px;">  </div>
+
+<script>
+
+    require(["esri/config", "esri/Map", "esri/views/MapView", "esri/geometry/Extent",
+        "esri/widgets/BasemapToggle", "esri/widgets/BasemapGallery",
+        "esri/layers/FeatureLayer", "esri/layers/TileLayer", "esri/widgets/LayerList", "esri/PopupTemplate", "esri/rest/support/Query"],
+        function (esriConfig, Map, MapView, Extent, BasemapToggle, BasemapGallery,
+            FeatureLayer, TileLayer, LayerList, PopupTemplate,Query) {
+
+            esriConfig.apiKey = "AAPK2a40bb133b76403a8053dc2c7f80e3a8aDhHwrabkJFzbubBVTxXEYlNwzIKE1v0151BOTn1Z70kAt1SJBXorHXmyKFRiE-V";
+
+
+            const map = new Map({
+                basemap: "arcgis-topographic"
+            });
+
+            const view = new MapView({
+                map: map,
+                container: "DeleteReclamationsMap",
+                zoom: 13,
+                center: [-7.62, 33.59]
+            });
+
+
+
+            const Reclamationslayer2 = new FeatureLayer("http://localhost:6080/arcgis/rest/services/Projet_DEV_SIG2_Acrgis_SDK_API/Reclamations/FeatureServer");
+            map.add(Reclamationslayer2);
+
+
+         const query = new Query();
+             query.where = "Objectid='@Html.DisplayFor(model => model.Objectid)'";
+             query.returnGeometry = true;
+            Reclamationslayer2.queryFeatures(query)
+             .then((results) => {
+             view.graphics.addMany(results.features);
+             view.goTo(results.features);
+             }).catch((error) => {
+             console.log(error.error);
+             });
+
+        });
+</script>
+
+<h4></h4>
+<hr />
+<div>
+    <h4>Vous etes sure de vouloir supprimer cette reclamations?</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">@Html.DisplayNameFor(model => model.Objet)</dt>
+        <dd class="col-sm-10">@Html.DisplayFor(model => model.Objet)</dd>
+
+        <dt class="col-sm-2">@Html.DisplayNameFor(model => model.Message)</dt>
+        <dd class="col-sm-10">@Html.DisplayFor(model => model.Message)</dd>
+
+        <dt class="col-sm-2">@Html.DisplayNameFor(model => model.DemarcheD)</dt>
+        <dd class="col-sm-10">@Html.DisplayFor(model => model.DemarcheD)</dd>
+
+        <dt class="col-sm-2">@Html.DisplayNameFor(model => model.Mail)</dt>
+        <dd class="col-sm-10">@Html.DisplayFor(model => model.Mail)</dd>
+
+     
+    </dl>
+
+    <form asp-action="Delete">
+        <input type="hidden" asp-for="Objectid1" />
+        <input type="submit" value="Supprimer" class="btn btn-danger" /> |
+        <a asp-action="Index">Revenir à la liste List</a>
+    </form>
+</div>

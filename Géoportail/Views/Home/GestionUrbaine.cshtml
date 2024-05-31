@@ -1,0 +1,325 @@
+﻿
+<h3> Gestion urbaine : consulter la destination du sol en saisissant un reference de projet </h3>
+<hr />
+<input type="text" id="referenceInput" placeholder="Enter project reference">
+<button id="runGpButton">Run Geoprocessor</button>
+<br />
+<div id="ViewDivGestionUrbaine" style="padding: 0;margin: 0;width: 100%;height: 600px">  </div>
+
+<script>
+    require([
+        "esri/config",
+        "esri/Map",
+        "esri/views/MapView",
+        "esri/layers/FeatureLayer",
+        "esri/widgets/Legend",
+        "esri/widgets/Search",
+        "esri/widgets/BasemapGallery",
+        "esri/widgets/ScaleBar",
+        "esri/widgets/Expand",
+        "esri/widgets/LayerList",
+        "esri/widgets/Measurement",
+        "esri/PopupTemplate", "esri/rest/geoprocessor",
+        "esri/Graphic"], function (esriConfig, Map, MapView, FeatureLayer, Legend, Search, BasemapGallery, ScaleBar, Expand, LayerList, Measurement, PopupTemplate, Geoprocessor, Graphic) {
+
+        // configuration de la clé api
+       esriConfig.apiKey = "Arcgis sdk API KEY ";
+
+        // Créer la carte
+        var map = new Map({
+            basemap: "topo-vector" // Fond de carte initial topo-vector
+        });
+
+        // Vue de la carte
+        var view = new MapView({
+            container: "ViewDivGestionUrbaine",
+            map: map,
+            center: [-7.618, 33.573], // Longitude, Latitude pour Casablanca
+            zoom: 10
+        });
+
+        // Symbologie de la couche commune
+        var CommunesSymbole = {
+            type: "simple-fill",
+            outline: {
+                color: "red",
+                width: "1px"
+            }
+        };
+        var CommunesRender = {
+            type: "simple",
+            symbol: CommunesSymbole
+        };
+
+        // Symbologie de la couche SDAU
+        var SDAUSymbole = {
+            type: "simple-fill",
+            outline: {
+                color: "grey",
+                width: "1px"
+            }
+        };
+        var SDAURender = {
+            type: "simple",
+            symbol: SDAUSymbole
+        };
+
+        // Symbologie de la couche Site de projet
+        var SitesSymbole = {
+            type: "simple-fill",
+            color: "blue",
+            outline: {
+                color: "black",
+                width: "1px"
+            }
+        };
+        var SitesRender = {
+            type: "simple",
+            symbol: SitesSymbole
+        };
+
+        // Fenêtre contextuelle pour la couche des SDAU
+        var popupSDAU = new PopupTemplate({
+            title: "<p>SDAU : {SDAU}</p>",
+            content: "<b>Commune: {COMMUNE_AR}</b>" +
+                    "<p>PREFECTURE : {PREFECTURE}</p>" +
+                     "<p>La classe : {nom_classe}</p>"
+        });
+
+        // Fenêtre contextuelle pour la couche des Sites de projets
+        var popupSitesProjets = new PopupTemplate({
+            title: "<b>Reference du projet : {REFERENCE}</b>",
+            content: "<p>Site du projet : {Site}</p>" + 
+            "<b>Commune: {Commune_Ce}</b>" +
+                "<p>PREFECTURE : {PREFECTURE}</p>" +   
+                "<p>Etat du projet : {ETAT }</p>"
+        });
+
+        const SDAULayer = new FeatureLayer({
+            url: "https://services2.arcgis.com/VIjs6CEdfj5mcpU7/arcgis/rest/services/sdau_wgs84/FeatureServer/0",
+            title: "Destination du sol",
+            renderer: SDAURender,
+            outFields: ["PREFECTURE", "COMMUNE_AR", "SDAU", "nom_classe"],
+            popupTemplate: popupSDAU
+        });
+
+        const SitesProjetLayer = new FeatureLayer({
+            url: "https://services2.arcgis.com/VIjs6CEdfj5mcpU7/arcgis/rest/services/sites_projets/FeatureServer/0",
+            title: "Site de projets",
+            renderer: SitesRender,
+            outFields: ["PREFECTURE", "Commune_Ce", "REFERENCE", "ETAT","Site"],
+            popupTemplate: popupSitesProjets
+        });
+
+        map.add(SDAULayer);
+        map.add(SitesProjetLayer);
+
+        // Outils de navigation
+        var scaleBar = new ScaleBar({
+            view: view,
+            unit: "dual"
+        });
+        view.ui.add(scaleBar, {
+            position: "bottom-left"
+        });
+
+        var searchWidget = new Search({
+            view: view
+        });
+        view.ui.add(searchWidget, {
+            position: "top-right",
+            index: 1
+        });
+
+        var basemapGallery = new BasemapGallery({
+            view: view
+        });
+        var bgExpand = new Expand({
+            view: view,
+            content: basemapGallery
+        });
+        view.ui.add(bgExpand, {
+            position: "top-left"
+        });
+
+        var layerList = new LayerList({
+            view: view
+        });
+        var llExpand = new Expand({
+            view: view,
+            content: layerList
+        });
+        view.ui.add(llExpand, {
+            position: "top-right",
+            index: 2
+        });
+
+        var legend = new Legend({
+            view: view
+        });
+        var lgExpand = new Expand({
+            view: view,
+            content: legend
+        });
+        view.ui.add(lgExpand, {
+            position: "bottom-right"
+        });
+
+        // Ajout du widget de mesure
+        var measurementWidget = new Measurement({
+            view: view,
+            activeTool: false // Pas d'outil actif par défaut
+        });
+
+        var measurementExpand = new Expand({
+            view: view,
+            content: measurementWidget,
+            expandIconClass: "esri-icon-measure"
+        });
+
+        view.ui.add(measurementExpand, {
+            position: "top-left",
+            index: 3 // Ajoutez cet index pour contrôler l'ordre
+        });
+
+        // Ajouter un event listener sur l'icône du widget de mesure
+        measurementExpand.watch("expanded", function (isExpanded) {
+            if (isExpanded) {
+                // Activer l'outil de mesure de distance lorsque l'icône est cliquée
+                measurementWidget.activeTool = "distance";
+            } else {
+                // Désactiver l'outil de mesure lorsque le widget est réduit
+                measurementWidget.activeTool = null;
+            }
+            });
+
+       /*
+       // Configuration du service de géotraitement
+        var gpUrl = "http://localhost:6080/arcgis/rest/services/Projet_DEV_SIG2_Acrgis_SDK_API/Model_Projet_SDAU/GPServer/Model_Projet_SDAU";
+        var geoprocessor = new Geoprocessor(gpUrl);
+
+        // Fonction pour appeler le géotraitement
+            function runGeoprocessor(reference) {
+                var params = {
+                    "Reference": reference
+                };
+
+                geoprocessor.execute(params).then(drawResultData);
+            }
+
+
+
+                // Fonction pour dessiner les résultats du géotraitement
+                function drawResultData(result) {
+                    var features = result.results[0].value.features;
+                    features.forEach(function (feature) {
+                        var graphic = new Graphic({
+                            geometry: feature.geometry,
+                            symbol: {
+                                type: "simple-fill",
+                                color: [0, 0, 255, 0.5],
+                                outline: {
+                                    color: [0, 0, 255],
+                                    width: 2
+                                }
+                            },
+                            attributes: feature.attributes,
+                            popupTemplate: new PopupTemplate({
+                                title: "<p>Destination du sol</p>",
+                                content: "<b>Site du projet: {Site}</b>" +
+                                    "<b>Reference du projet: {REFERENCE}</b>" +
+                                    "<p>la classe du SDAU : {nom_classe}</p>" +
+                                    "<p>SDAU : {SDAU}</p>" +
+                                    "<b>Commune: {COMMUNE_AR}</b>" +
+                                    "<p>PREFECTURE : {PREFECTURE}</p>" +
+                                    "<p>La classe : {nom_classe}</p>"
+                            })
+                        });
+                        view.graphics.add(graphic);
+                    });
+                    view.goTo({ target: features.map(f => f.geometry), zoom: 12 });
+                }
+
+                // Ajouter un bouton pour exécuter le géotraitement
+                var runButton = document.getElementById('runGpButton');
+                runButton.addEventListener('click', function () {
+                    var referenceInput = document.getElementById('referenceInput').value;
+                    runGeoprocessor(referenceInput);
+                });
+                */
+
+            // Configuration du service de géotraitement
+            var gpUrl = "http://localhost:6080/arcgis/rest/services/Projet_DEV_SIG2_Acrgis_SDK_API/Model_Projet_SDAU/GPServer/Model_Projet_SDAU";
+            var geoprocessor = new Geoprocessor(gpUrl);
+
+            // Fonction pour appeler le géotraitement
+            function runGeoprocessor(reference) {
+                var params = {
+                    "Reference": reference
+                };
+
+                geoprocessor.execute(params).then(drawResultData);
+            }
+
+            // Fonction pour dessiner les résultats du géotraitement
+            function drawResultData(result) {
+                var features = result.results[0].value.features;
+                features.forEach(function (feature) {
+                    var graphic = new Graphic({
+                        geometry: feature.geometry,
+                        symbol: {
+                            type: "simple-fill",
+                            color: [0, 0, 255, 0.5],
+                            outline: {
+                                color: [0, 0, 255],
+                                width: 2
+                            }
+                        },
+                        attributes: feature.attributes,
+                        popupTemplate: new PopupTemplate({
+                            title: "<p>Destination du sol</p>",
+                            content: "<b>Site du projet: {Site}</b>" +
+                                "<b>Reference du projet: {REFERENCE}</b>" +
+                                "<p>la classe du SDAU : {nom_classe}</p>" +
+                                "<p>SDAU : {SDAU}</p>" +
+                                "<b>Commune: {COMMUNE_AR}</b>" +
+                                "<p>PREFECTURE : {PREFECTURE}</p>" +
+                                "<p>La classe : {nom_classe}</p>"
+                        })
+                    });
+                    view.graphics.add(graphic);
+                });
+                view.goTo({ target: features.map(f => f.geometry), zoom: 12 });
+            }
+
+            // Création d'un widget de formulaire pour exécuter le géotraitement
+            var gpForm = document.createElement("div");
+            gpForm.innerHTML = `
+          <label for="referenceInput">Enter project reference:</label>
+          <input type="text" id="referenceInput" placeholder="Enter project reference">
+          <button id="runGpButton">Run Geoprocessor</button>
+        `;
+            gpForm.style.padding = "10px";
+            gpForm.style.backgroundColor = "white";
+
+            var gpExpand = new Expand({
+                view: view,
+                content: gpForm,
+                expandIconClass: "esri-icon-filter",
+                group: "top-right"
+            });
+
+            view.ui.add(gpExpand, {
+                position: "top-right",
+                index:3
+            }
+            );
+
+            // Ajouter un écouteur d'événement pour exécuter le géotraitement
+            gpForm.querySelector("#runGpButton").addEventListener('click', function () {
+                var referenceInput = gpForm.querySelector('#referenceInput').value;
+                runGeoprocessor(referenceInput);
+            });
+
+    });
+</script>

@@ -1,0 +1,78 @@
+﻿@model Géoportail.Models.Reclamatiosn
+
+@{
+    ViewData["Title"] = "Details";
+}
+
+<div id="viewDiv2" style="width: 80%;height:400px;border:3px solid black;"> </div>
+
+<script>
+    require(["esri/config", "esri/Map", "esri/views/MapView",
+        "esri/geometry/Extent", "esri/widgets/BasemapToggle", "esri/widgets/BasemapGallery",
+        "esri/layers/FeatureLayer", "esri/layers/TileLayer",
+        "esri/widgets/LayerList", "esri/rest/support/Query", "esri/widgets/Editor"],
+        function (esriConfig, Map, MapView, Extent, BasemapToggle, BasemapGallery,
+            FeatureLayer, TileLayer, LayerList, Query, Editor) {
+            esriConfig.apiKey = "AAPK2a40bb133b76403a8053dc2c7f80e3a8aDhHwrabkJFzbubBVTxXEYlNwzIKE1v0151BOTn1Z70kAt1SJBXorHXmyKFRiE-V";
+
+            //esriConfig.request.trustedServers.push("https://localhost:6443");
+            const map = new Map({
+                basemap: "arcgis-topographic"
+            });
+            const view = new MapView({
+                map: map,
+                container: "viewDiv2",
+                //extent: extent
+                zoom: 13,
+                center: [-7.62, 33.59]
+            });
+            const Reclamationslayer = new FeatureLayer({
+                url: "http://localhost:6080/arcgis/rest/services/Projet_DEV_SIG2_Acrgis_SDK_API/Reclamations/FeatureServer/"
+
+            });
+            map.add(Reclamationslayer);
+            const editor = new Editor({
+                view: view
+
+            });
+            // Add widget to the view
+            view.ui.add(editor, "top-right");
+           
+
+            const query = new Query();
+            query.where = "Objectid='@Html.DisplayFor(model => model.Objectid)'";
+            query.returnGeometry = true;
+            Reclamationslayer.queryFeatures(query)
+                .then((results) => {
+                    view.graphics.addMany(results.features);
+                    view.goTo(results.features);
+                }).catch((error) => {
+                    console.log(error.error);
+                });
+        });
+</script>
+<h1>Les Details de la réclamation</h1>
+
+<div>
+    <h4>Reclamation</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">@Html.DisplayNameFor(model => model.Objet)</dt>
+        <dd class="col-sm-10">@Html.DisplayFor(model => model.Objet)</dd>
+
+        <dt class="col-sm-2">@Html.DisplayNameFor(model => model.Message)</dt>
+        <dd class="col-sm-10">@Html.DisplayFor(model => model.Message)</dd>
+
+        <dt class="col-sm-2">@Html.DisplayNameFor(model => model.DemarcheD)</dt>
+        <dd class="col-sm-10">@Html.DisplayFor(model => model.DemarcheD)</dd>
+
+        <dt class="col-sm-2">@Html.DisplayNameFor(model => model.Mail)</dt>
+        <dd class="col-sm-10">@Html.DisplayFor(model => model.Mail)</dd>
+
+        
+    </dl>
+</div>
+<div>
+    <a asp-action="Edit" asp-route-id="@Model.Objectid1">Edit</a> |
+    <a asp-action="Index">Revenir à la liste</a>
+</div>

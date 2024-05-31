@@ -1,0 +1,50 @@
+﻿@model Géoportail.Models.Reclamatiosn
+
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h3> Créer une nouvelle réclamation</h3>
+<div id="viewDiv3" style="padding: 0;margin: 0;margin-left:10%;width: 80%;height: 350px;">  </div>
+
+
+<script>
+    require(["esri/config", "esri/Map", "esri/views/MapView",
+        "esri/geometry/Extent", "esri/widgets/BasemapToggle", "esri/widgets/BasemapGallery",
+        "esri/layers/FeatureLayer", "esri/layers/TileLayer",
+        "esri/widgets/LayerList", "esri/rest/support/Query", "esri/widgets/Editor"],
+        function (esriConfig, Map, MapView, Extent, BasemapToggle, BasemapGallery,
+            FeatureLayer, TileLayer, LayerList, Query, Editor) {
+
+            esriConfig.apiKey = "AAPK2a40bb133b76403a8053dc2c7f80e3a8aDhHwrabkJFzbubBVTxXEYlNwzIKE1v0151BOTn1Z70kAt1SJBXorHXmyKFRiE-V";
+
+            const map = new Map({
+                basemap: "arcgis-topographic"
+            });
+
+            const view = new MapView({
+                map: map,
+                container: "viewDiv3",
+                //extent: extent
+                zoom: 13,
+                center: [-7.62, 33.59]
+            });
+            
+            const Reclamationslayer = new FeatureLayer({
+                url:"http://localhost:6080/arcgis/rest/services/Projet_DEV_SIG2_Acrgis_SDK_API/Reclamations/FeatureServer/"
+    
+            }); 
+            map.add(Reclamationslayer);
+            const editor = new Editor({
+                view: view
+
+            });
+            // Add widget to the view
+            view.ui.add(editor, "top-right");
+        });
+</script>
+
+<div>
+    <a asp-action="Index">Revenir à la Liste</a>
+</div>

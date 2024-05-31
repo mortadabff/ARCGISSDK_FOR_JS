@@ -1,0 +1,76 @@
+﻿@model IEnumerable<Géoportail.Models.Reclamatiosn>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h3>Cartes des reclamations</h3>
+
+<p>
+    <a asp-action="Create">Ajouter une nouvelle réclamation</a>
+</p>
+
+
+<div id="viewDiv4" style="padding: 0;margin: 0;width: 90%;height: 400px;">  </div>
+
+<script>
+
+    require(["esri/config", "esri/Map", "esri/views/MapView", "esri/geometry/Extent",
+        "esri/widgets/BasemapToggle", "esri/widgets/BasemapGallery",
+        "esri/layers/FeatureLayer", "esri/layers/TileLayer", "esri/widgets/LayerList", "esri/PopupTemplate"],
+        function (esriConfig, Map, MapView, Extent, BasemapToggle, BasemapGallery,FeatureLayer, TileLayer, LayerList, PopupTemplate) {
+
+
+        esriConfig.apiKey = "AAPK2a40bb133b76403a8053dc2c7f80e3a8aDhHwrabkJFzbubBVTxXEYlNwzIKE1v0151BOTn1Z70kAt1SJBXorHXmyKFRiE-V";
+
+
+            const map = new Map({
+                basemap: "arcgis-topographic"
+            });
+
+            const view = new MapView({
+                map: map,
+                container: "viewDiv4",
+                zoom: 13,
+                center: [-7.62, 33.59]
+            });
+           
+           
+            const Reclamationslayer = new FeatureLayer({
+                url: "http://localhost:6080/arcgis/rest/services/Projet_DEV_SIG2_Acrgis_SDK_API/Reclamations/FeatureServer/"
+
+            });
+            map.add(Reclamationslayer);
+
+        });
+</script>
+
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>@Html.DisplayNameFor(model => model.Objet)</th>
+            <th>@Html.DisplayNameFor(model => model.Message)</th>
+            <th>@Html.DisplayNameFor(model => model.DemarcheD)</th>
+            <th>@Html.DisplayNameFor(model => model.Mail)</th>
+            
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@Html.DisplayFor(modelItem => item.Objet)</td>
+                <td>@Html.DisplayFor(modelItem => item.Message)</td>
+                <td>@Html.DisplayFor(modelItem => item.DemarcheD)</td>
+                <td>@Html.DisplayFor(modelItem => item.Mail)</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Objectid1">Modifier</a> |
+                    <a asp-action="Details" asp-route-id="@item.Objectid1">Voir details</a> |
+                    <a asp-action="Delete" asp-route-id="@item.Objectid1">Supprimer</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

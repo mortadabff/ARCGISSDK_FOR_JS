@@ -1,0 +1,1145 @@
+﻿
+
+
+<div id="viewDiv" style="padding: 0;margin: 0;width: 100%;height: 600px">  </div>
+
+<script>
+    require([
+        "esri/config",
+        "esri/Map",
+        "esri/views/MapView",
+        "esri/layers/FeatureLayer",
+        "esri/widgets/Legend",
+        "esri/widgets/Search",
+        "esri/widgets/BasemapGallery",
+        "esri/widgets/ScaleBar",
+        "esri/widgets/Expand",
+        "esri/widgets/LayerList",
+        "esri/widgets/Measurement",
+        "esri/PopupTemplate",
+        "esri/rest/geoprocessor"
+
+    ], function (esriConfig, Map, MapView, FeatureLayer, Legend, Search, BasemapGallery, ScaleBar, Expand, LayerList, Measurement, PopupTemplate, Geoprocessor) {
+
+        // configuration de la clé api
+       esriConfig.apiKey = "Arcgis sdk API KEY ";
+
+        // Créer la carte
+        var map = new Map({
+            basemap: "topo-vector" // Fond de carte initial topo-vector
+        });
+
+        // Vue de la carte
+        var view = new MapView({
+            container: "viewDiv",
+            map: map,
+            center: [-7.618, 33.573], // Longitude, Latitude pour Casablanca
+            zoom: 10
+        });
+
+        const commRenderer = {
+            type: "class-breaks",
+            field: "Shape_Area",
+            classBreakInfos: [
+                {
+                    minValue: 0,
+                    maxValue: 10000000, // Ajusté pour 5 classes
+                    symbol: {
+                        type: "simple-fill",
+                        color: [255, 255, 212],
+                        style: "solid",
+                        outline: {
+                            color: "white",
+                            width: 1
+                        },
+                    }
+                },
+                {
+                    minValue: 10000001,
+                    maxValue: 25000000, // Ajusté pour 5 classes
+                    symbol: {
+                        type: "simple-fill",
+                        color: [254, 227, 145],
+                        style: "solid",
+                        outline: {
+                            color: "white",
+                            width: 1
+                        }
+                    }
+                },
+                {
+                    minValue: 25000001,
+                    maxValue: 50000000, // Ajusté pour 5 classes
+                    symbol: {
+                        type: "simple-fill",
+                        color: [254, 196, 79],
+                        style: "solid",
+                        outline: {
+                            color: "white",
+                            width: 1
+                        }
+                    }
+                },
+                {
+                    minValue: 50000001,
+                    maxValue: 80000000, // Ajusté pour 5 classes
+                    symbol: {
+                        type: "simple-fill",
+                        color: [254, 153, 41],
+                        style: "solid",
+                        outline: {
+                            color: "white",
+                            width: 1
+                        }
+                    }
+                },
+                {
+                    minValue: 80000001,
+                    maxValue: 135000000, // Ajusté pour 5 classes
+                    symbol: {
+                        type: "simple-fill",
+                        color: [217, 95, 14],
+                        style: "solid",
+                        outline: {
+                            color: "white",
+                            width: 1
+                        }
+                    }
+                }
+            ]
+        };
+
+        let popRenderer2004 = {
+            type: "simple", // autocasts as new SimpleRenderer()
+            symbol: {
+                type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+                size: 6,
+                color: "green", // Couleur pour 2004
+                outline: { // autocasts as new SimpleLineSymbol()
+                    width: 0.5,
+                    color: "white"
+                }
+            },
+            visualVariables: [{
+                type: "size",
+                field: "TOTAL2004",
+                minDataValue: 3365,
+                maxDataValue: 323944,
+                minSize: 8,
+                maxSize: 30
+            }]
+        };
+
+        // Renderer pour la population de 1994
+        let popRenderer1994 = {
+            type: "simple", // autocasts as new SimpleRenderer()
+            symbol: {
+                type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+                size: 6,
+                color: "blue", // Couleur pour 1994
+                outline: { // autocasts as new SimpleLineSymbol()
+                    width: 0.5,
+                    color: "white"
+                }
+            },
+            visualVariables: [{
+                type: "size",
+                field: "TOTAL1994",
+                minDataValue: 3000, // Exemple de valeur minimale pour 1994, à ajuster selon les données réelles
+                maxDataValue: 300000, // Exemple de valeur maximale pour 1994, à ajuster selon les données réelles
+                minSize: 6, // Taille minimale pour les symboles de 1994
+                maxSize: 28 // Taille maximale pour les symboles de 1994
+            }]
+        };
+
+
+         const grandeSurfaceRenderer = {
+            type: "simple", // autocasts as new SimpleRenderer()
+            symbol: {
+                type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+                size: 9,
+                color: "wite", // $
+                outline: { // autocasts as new SimpleLineSymbol()
+                    width: 2,
+                    color: "black"
+                }
+            }
+        };
+        const popupGrandeSurface = new PopupTemplate({
+            title: "Grande Surface : {Type}",
+            content: "<p>Nom : {Nom}</p><p>Adresse : {Adresse}</p>",
+        });
+        const popupHotel = new PopupTemplate({
+            title: "Hôtel : {NOM}",
+            content: "<p>Catégorie : {CATÉGORIE}</p><p>Adresse : {ADRESSE}</p>",
+        });
+
+
+        var popupPopulation = new PopupTemplate({
+            title: "<b>Population de : {ARRONDISSE}</b>",
+            content: [{
+                type: "media",
+                mediaInfos: [{
+                    type: "column-chart",
+                    caption: "Statistiques de Casablanca",
+                    value: {
+                        fields: ["TOTAL1994", "TOTAL2004"],
+                        normalizeField: null,
+                        tooltipField: ""
+                    }
+                }]
+            }]
+        });
+
+
+
+
+        // Ajouter des couches
+            const Communes = new FeatureLayer({
+                url: "https://services2.arcgis.com/VIjs6CEdfj5mcpU7/arcgis/rest/services/commune_wgs/FeatureServer/0",
+                title: "Limite communes de Casablanca",
+
+              /*  renderer: {
+                    type: "simple", // Type de rendu simple
+                    symbol: {
+                        type: "simple-line", // Type de symbole : ligne simple
+                        color: "red", // Couleur orange
+                        width: "2px" // Largeur de la ligne
+                    }
+                }*/
+                renderer: commRenderer // Symbologie pour les polygones
+            });
+        map.add(Communes);
+
+            const Voirie = new FeatureLayer({
+                url: "https://services2.arcgis.com/VIjs6CEdfj5mcpU7/arcgis/rest/services/voirie_casa/FeatureServer/0",
+                title: "Voirie",
+                renderer: {
+                    type: "simple", // autocasts as new SimpleRenderer()
+                    symbol: {
+                        type: "simple-line",
+                        color: "blue",
+                        width: "2px",
+                        style: "short-dot"
+                    }
+                }
+              //  renderer: VoirieRenderer
+            });
+        map.add(Voirie);
+
+            const Population = new FeatureLayer({
+                url: "https://services2.arcgis.com/VIjs6CEdfj5mcpU7/arcgis/rest/services/casa_population/FeatureServer/0",
+                title: "Population",
+                renderer:popRenderer1994,
+
+                /*renderer: {
+                    type: "simple", // Type de rendu simple
+                    symbol: {
+                        type: "simple-marker", // Type de symbole : marqueur simple
+                        color: [255, 165, 0], // Couleur orange
+                        size: 8, // Taille du marqueur
+                        outline: {
+                            color: [255, 255, 255], // Couleur de contour blanc
+                            width: 1 // Largeur du contour
+                        }
+                    }
+                },*/
+            PopupTemplate: popupPopulation
+
+            });
+
+        map.add(Population);
+
+            const Hotels = new FeatureLayer({
+                url: "https://services2.arcgis.com/VIjs6CEdfj5mcpU7/arcgis/rest/services/hotels_wgs/FeatureServer/0",
+                title: "Hôtels",
+                renderer: {
+                    type: "simple", // Type de rendu simple
+                    symbol: {
+                        type: "simple-marker", // Type de symbole : marqueur simple
+                        color: [128, 0, 128], // Couleur mauve
+                        size: 8, // Taille du marqueur
+                        outline: {
+                            color: [255, 255, 255], // Couleur de contour blanc
+                                width: 1 // Largeur du contour
+                         }
+                        }
+                    },
+                PopupTemplate: popupHotel
+
+                });
+        map.add(Hotels);
+
+        const GrandeSurface = new FeatureLayer({
+                url: "https://services2.arcgis.com/VIjs6CEdfj5mcpU7/arcgis/rest/services/grande_surface_wgs/FeatureServer/0",
+                title: "Grandes surfaces",
+                renderer: grandeSurfaceRenderer,
+                popupTemplate: popupGrandeSurface
+            });
+
+        map.add(GrandeSurface);
+
+
+
+        // Enable default popup templates
+        view.popup.defaultPopupTemplateEnabled = true;
+
+
+        // Outils de navigation
+        var scaleBar = new ScaleBar({
+            view: view,
+            unit: "dual"
+        });
+        view.ui.add(scaleBar, {
+            position: "bottom-left"
+        });
+
+        var searchWidget = new Search({
+            view: view
+        });
+        view.ui.add(searchWidget, {
+            position: "top-right",
+            index: 1
+        });
+
+        var basemapGallery = new BasemapGallery({
+            view: view
+        });
+        var bgExpand = new Expand({
+            view: view,
+            content: basemapGallery
+        });
+        view.ui.add(bgExpand, {
+            position: "top-left"
+        });
+
+        var layerList = new LayerList({
+            view: view
+        });
+        var llExpand = new Expand({
+            view: view,
+            content: layerList
+        });
+        view.ui.add(llExpand, {
+            position: "bottom-right",
+            index: 2
+        });
+
+        var legend = new Legend({
+            view: view
+        });
+        var lgExpand = new Expand({
+            view: view,
+            content: legend
+        });
+        view.ui.add(lgExpand, {
+            position: "bottom-right",
+            index:1
+        });
+
+        // Ajout du widget de mesure
+        var measurementWidget = new Measurement({
+            view: view,
+            activeTool: false // Pas d'outil actif par défaut
+        });
+
+        var measurementExpand = new Expand({
+            view: view,
+            content: measurementWidget,
+            expandIconClass: "esri-icon-measure"
+        });
+
+        view.ui.add(measurementExpand, {
+            position: "top-left",
+            index: 3 // Ajoutez cet index pour contrôler l'ordre
+        });
+
+        // Ajouter un event listener sur l'icône du widget de mesure
+        measurementExpand.watch("expanded", function (isExpanded) {
+            if (isExpanded) {
+                // Activer l'outil de mesure de distance lorsque l'icône est cliquée
+                measurementWidget.activeTool = "distance";
+            } else {
+                // Désactiver l'outil de mesure lorsque le widget est réduit
+                measurementWidget.activeTool = null;
+            }
+        });
+
+
+
+
+
+
+
+
+
+
+        // Requietes et filtres 
+        const hotelsFilterExpressions = [
+            "CATÉGORIE = '1*'",
+            "CATÉGORIE = '2*'",
+            "CATÉGORIE = '3*'",
+            "CATÉGORIE = '4*'",
+            "CATÉGORIE = '5*'"
+        ];
+
+        const HotelsFilterLabel = document.createElement("div");
+        HotelsFilterLabel.innerHTML = "<b>Filtre des Hotels par catégorie :</b>";
+        view.ui.add(HotelsFilterLabel, {
+            position: "top-right",
+            index: 2
+        });
+
+        // Création d'un menu déroulant pour sélectionner une expression de filtre
+        const hotelsSelectFilter = document.createElement("select");
+        hotelsFilterExpressions.forEach(function (sql) {
+            let option = document.createElement("option");
+            option.value = sql;
+            option.innerHTML = sql;
+            hotelsSelectFilter.appendChild(option);
+        });
+        view.ui.add(hotelsSelectFilter, {
+            position: "top-right",
+            index: 3
+        }); 
+
+        // Fonction pour définir le filtre sur la couche des hôtels
+        function setHotelsLayerFilter(expression) {
+            Hotels.definitionExpression = expression;
+        }
+
+        // Ajout d'un écouteur d'événements pour le changement de filtre
+        hotelsSelectFilter.addEventListener('change', function (event) {
+            setHotelsLayerFilter(event.target.value);
+        });
+
+
+
+        // Expressions de filtre
+        const GrandeSurfaceFilterExpressions = [
+            "Type = 'Marjane'",
+            "Type = 'Metro'",
+            "Type = 'Acima'",
+            "Type = 'Grande Surface Spécialisée'",
+            "Type = 'LABEL VIE'",
+            "Type = 'Twin Center'"
+        ];
+
+        const GrandeSurfaceFilterLabel = document.createElement("div");
+        GrandeSurfaceFilterLabel.innerHTML = "<b>Filtre des Grande Surface  par type  :</b>";
+        view.ui.add(GrandeSurfaceFilterLabel, {
+            position: "top-right",
+            index: 4
+        });
+        // Création d'un menu déroulant pour sélectionner une expression de filtre
+        const GrandeSurfaceSelectFilter = document.createElement("select");
+        GrandeSurfaceFilterExpressions.forEach(function (sql) {
+            let option = document.createElement("option");
+            option.value = sql;
+            option.innerHTML = sql;
+            GrandeSurfaceSelectFilter.appendChild(option);
+        });
+
+        view.ui.add(GrandeSurfaceSelectFilter, {
+            position: "top-right",
+            index: 5
+        });
+
+        // Fonction pour définir le filtre sur la couche des grandes surfaces
+        function setGrandeSurfaceLayerFilter(expression) {
+            GrandeSurface.definitionExpression = expression;
+        }
+
+        // Ajout d'un écouteur d'événements pour le changement de filtre
+        GrandeSurfaceSelectFilter.addEventListener('change', function (event) {
+            setGrandeSurfaceLayerFilter(event.target.value);
+        });
+
+        // Fonction pour afficher les résultats
+        function displayResults(results, layer) {
+            // Effacer les graphiques et popup affichés dans la vue avant d’ajouter les entités retournées par la requête
+            view.popup.close();
+            view.graphics.removeAll();
+
+            // Créer un symbole
+            const symbol = new SimpleMarkerSymbol({
+                type: "simple-marker",
+                size: 9,
+                color: [226, 135, 67], // Couleur orange
+                outline: {
+                    color: "black",
+                    width: 1
+                }
+            });
+
+            // Assigner le symbole et le popupTemplate à chaque entité
+            results.features.forEach(function (feature) {
+                feature.symbol = symbol;
+                feature.popupTemplate = layer.popupTemplate;
+                view.graphics.add(feature);
+            });
+        }
+
+
+
+
+
+
+        // symbologie
+    /*            type: "class-breaks",
+            // attribute of interest
+            field: "Shape_Area",
+            classBreakInfos: [
+                {
+                    minValue: 0,
+                    maxValue: 8072282.382670,
+                    symbol: {
+                        type: "simple-fill", // autocasts as new SimpleFillSymbol()
+                        color: [255, 255, 212],
+                        style: "solid",
+                        outline: { // autocasts as new SimpleLineSymbol()
+                            color: "white",
+                            width: 1
+                        },
+                    }
+                },
+                {
+                    minValue: 8072283,
+                    maxValue: 16553372.723800,
+                    symbol: {
+                        type: "simple-fill", // autocasts as new SimpleFillSymbol()
+                        color: [254, 227, 145],
+                        style: "solid",
+                        outline: { // autocasts as new SimpleLineSymbol()
+                            color: "white",
+                            width: 1
+                        }
+                    }
+
+                },
+
+                {
+                    minValue: 16553371,
+                    maxValue: 34005349.823000,
+                    symbol: {
+                        type: "simple-fill", // autocasts as new SimpleFillSymbol()
+                        color: [254, 196, 79],
+                        style: "solid",
+                        outline: { // autocasts as new SimpleLineSymbol()
+                            color: "white",
+                            width: 1
+                        }
+                    }
+                },
+                {
+                    minValue: 34005350,
+                    maxValue: 58595365.882700,
+                    symbol: {
+                        type: "simple-fill", // autocasts as new SimpleFillSymbol()
+                        color: [254, 153, 41],
+                        style: "solid",
+                        outline: { // autocasts as new SimpleLineSymbol()
+                            color: "white",
+                            width: 1
+                        }
+                    }
+                },
+                {
+                    minValue: 58595366,
+                    maxValue: 134985742.774000,
+                    symbol: {
+                        type: "simple-fill", // autocasts as new SimpleFillSymbol()
+                        color: [217, 95, 14],
+                        style: "solid",
+                        outline: { // autocasts as new SimpleLineSymbol()
+                            color: "white",
+                            width: 1
+                        }
+                    }
+                },
+
+            ]
+        };
+        const selectCommunes = ["Choisissez un critère pour les communes", "Par préfecture", "Par commune/arrondissement", "Par surface"];
+        const selectFilterCommunes = document.createElement("select");
+        selectCommunes.forEach(function (sql) {
+            let option = document.createElement("option");
+            option.value = sql;
+            option.innerHTML = sql;
+            selectFilterCommunes.appendChild(option);
+        });
+
+        view.ui.add(selectFilterCommunes, "top-right");
+
+
+        selectFilterCommunes.addEventListener("change", function (event) {
+            const selectedOption = event.target.value;
+
+            // Clear existing symbology
+            communes.renderer = null;
+
+            if (selectedOption === "Par préfecture") {
+                // Symbology by préfecture
+                communes.renderer = {
+                    type: "unique-value",
+                    field: "prefecture",
+                    uniqueValueInfos: [
+                        {
+                            value: "PREFECTURE DE CASABLANCA",
+                            symbol: {
+                                type: "simple-fill",
+                                color: "Gold",
+                            },
+                        },
+                        {
+                            value: "PREFECTURE DE MOHAMMEDIA",
+                            symbol: {
+                                type: "simple-fill",
+                                color: "Salmon",
+                            },
+                        },
+                        {
+                            value: "PROVINCE DE BEN SLIMANE",
+                            symbol: {
+                                type: "simple-fill",
+                                color: "DarkRed",
+                            },
+                        },
+                        {
+                            value: "PROVINCE DE MEDIOUNA",
+                            symbol: {
+                                type: "simple-fill",
+                                color: "Pink",
+                            },
+                        },
+                        {
+                            value: "PROVINCE DE NOUACEUR",
+                            symbol: {
+                                type: "simple-fill",
+                                color: "MediumVioletRed",
+                            },
+                        },
+                    ],
+                };
+            }
+
+            if (selectedOption === "Par commune/arrondissement") {
+
+                communes.renderer = {
+                    type: "unique-value",
+                    field: "COMMUNE_AR",
+                    uniqueValueInfos: [
+                        {
+                            value: "COMMUNE DU MECHOUAR",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [255, 255, 204, 1],
+                            },
+                        },
+                        {
+                            value: "COMMUNE RURALE BENI YACKLEF",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [255, 255, 102, 1],
+                            },
+                        },
+                        {
+                            value: "COMMUNE RURALE ECHELLALATE",
+                            symbol: {
+                                type: "simple-fill",
+                                color: "Gold",
+                            },
+                        },
+                        {
+                            value: "COMMUNE RURALE MEJJATIA OULED TALEB",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [255, 255, 204, 1],
+                            },
+                        },
+                        {
+                            value: "COMMUNE RURALE OULED AZZOUZ",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [255, 204, 0, 1],
+                            },
+                        },
+                        {
+                            value: "COMMUNE RURALE OULED SALEH",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [255, 153, 0, 1],
+                            },
+                        },
+                        {
+                            value: "COMMUNE RURALE SIDI HAJJAJ OUED HASSAR",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [153, 102, 0, 1],
+                            },
+                        },
+                        {
+                            value: "COMMUNE RURALE SIDI MOUSSA BEN ALI",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [204, 255, 102, 1],
+                            },
+                        },
+                        {
+                            value: "COMMUNE RURALE SIDI MOUSSA BEN MEJDOUB",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [204, 204, 0, 1],
+                            },
+                        },
+                        {
+                            value: "MUNICIPALITE AIN HARROUDA",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [153, 255, 102, 1],
+                            },
+                        },
+                        {
+                            value: "MUNICIPALITE BOUSKOURA",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [102, 153, 0, 1],
+                            },
+                        },
+                        {
+                            value: "MUNICIPALITE DAR BOUAZZA",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [0, 153, 51, 1],
+                            },
+                        },
+                        {
+                            value: "MUNICIPALITE LAHRAOUIYINE",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [51, 153, 102, 1],
+                            },
+                        },
+                        {
+                            value: "MUNICIPALITE MANSOURIA",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [51, 102, 153, 1],
+                            },
+                        },
+                        {
+                            value: "MUNICIPALITE MEDIOUNA",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [0, 204, 255, 1],
+                            },
+                        },
+                        {
+                            value: "MUNICIPALITE MOHAMMEDIA",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [51, 51, 153, 1],
+                            },
+                        },
+                        {
+                            value: "MUNICIPALITE NOUACEUR",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [255, 80, 80, 1],
+                            },
+                        },
+                        {
+                            value: "MUNICIPALITE TIT MELLIL",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [255, 0, 0, 1],
+                            },
+                        },
+                        {
+                            value: "ARRONDISEMENT ANFA",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [255, 153, 153, 1],
+                            },
+                        },
+                        {
+                            value: "ARRONDISSEMENT AIN CHOCK",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [153, 102, 255, 1],
+                            },
+                        },
+                        {
+                            value: "ARRONDISSEMENT AIN SEBAA",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [102, 0, 255, 1],
+                            },
+                        },
+                        {
+                            value: "ARRONDISSEMENT BEN M'SICK",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [51, 51, 255, 1],
+                            },
+                        },
+                        {
+                            value: "ARRONDISSEMENT EL FIDA",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [0, 0, 204, 1],
+                            },
+                        },
+                        {
+                            value: "ARRONDISSEMENT ESSOUKHOUR ASSAWDA",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [0, 0, 153, 1],
+                            },
+                        },
+                        {
+                            value: "ARRONDISSEMENT HAY HASSANI",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [0, 0, 102, 1],
+                            },
+                        },
+                        {
+                            value: "ARRONDISSEMENT HAY MOHAMMADI",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [102, 102, 153, 1],
+                            },
+                        },
+                        {
+                            value: "ARRONDISSEMENT MAARIF",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [153, 0, 255, 1],
+                            },
+                        },
+                        {
+                            value: "ARRONDISSEMENT MERS SULTAN",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [153, 0, 204, 1],
+                            },
+                        },
+                        {
+                            value: "ARRONDISSEMENT MOULAY R'CHID",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [153, 51, 51, 1],
+                            },
+                        },
+                        {
+                            value: "ARRONDISSEMENT SBATA",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [128, 0, 0, 1],
+                            },
+                        },
+                        {
+                            value: "ARRONDISSEMENT SIDI BELYOUT",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [102, 51, 0, 1],
+                            },
+                        },
+                        {
+                            value: "ARRONDISSEMENT SIDI BERNOUSSI",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [153, 102, 0, 1],
+                            },
+                        },
+                        {
+                            value: "ARRONDISSEMENT SIDI MOUMEN",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [204, 51, 0, 1],
+                            },
+                        },
+                        {
+                            value: "ARRONDISSEMENT SIDI OTHMANE",
+                            symbol: {
+                                type: "simple-fill",
+                                color: [153, 51, 0, 1],
+                            },
+                        },
+                    ],
+                };
+            }
+            if (selectedOption === "Par surface") {
+                // Symbology by préfecture
+                communes.renderer = communesRenderer
+            }
+        });
+
+
+
+        const communes = new FeatureLayer({
+            // URL to the service
+            title: "Communes de Casablanca",
+            url: "https://services2.arcgis.com/RoQQkMtQGVVNg1rb/arcgis/rest/services/commune_wgs/FeatureServer/0"
+        });
+        map.add(communes);
+
+
+
+
+
+        var lineSymbol = {
+            type: "simple-line",
+            color: [128, 128, 128, 1],
+            width: 1 // Adjust the line width as needed
+        };
+
+        // Create the renderer using the white line symbol
+        var lineRenderer = {
+            type: "simple",
+            symbol: lineSymbol
+        };
+
+        const voiries = new FeatureLayer({
+            title: "Voiries de Casablanca",
+            url: "https://services2.arcgis.com/RoQQkMtQGVVNg1rb/arcgis/rest/services/voirie_casa/FeatureServer/0",
+            renderer: lineRenderer
+        });
+        map.add(voiries);
+        var hotelSymbol = {
+            type: "simple-marker",
+            style: "circle",
+            color: [0, 0, 0, 1], // Black color with full opacity
+            size: "15px", // Adjust the size of the circle as needed
+            outline: {
+                color: [255, 255, 255, 1], // White outline color with full opacity
+                width: 1
+            }
+        };
+
+
+        // Create the renderer using the black rectangle symbol
+        var hotelRenderer = {
+            type: "simple",
+            symbol: hotelSymbol
+        };
+
+        // Create the hotels layer with the renderer
+        const hotels = new FeatureLayer({
+            title: "Hôtels",
+            url: "https://services2.arcgis.com/RoQQkMtQGVVNg1rb/arcgis/rest/services/hotels_wgs/FeatureServer/0",
+            renderer: hotelRenderer
+        });
+        map.add(hotels);
+        const sqlExpressionsHotels = ["-------------------------->Hôtels<--------------------", "CATÉGORIE = '1*'", "CATÉGORIE = '2*'", "CATÉGORIE = '3*'", "CATÉGORIE = '4*'", "CATÉGORIE = '5*'", "CATÉGORIE = '5* luxe'", "CATÉGORIE = 'c conf'"];
+        const selectFilter = document.createElement("select");
+        sqlExpressionsHotels.forEach(function (sql) {
+            let option = document.createElement("option");
+            option.value = sql;
+            option.innerHTML = sql;
+            selectFilter.appendChild(option);
+        });
+        view.ui.add(selectFilter, "top-right");
+        var circleSymbol = {
+            type: "simple-marker",
+            style: "circle",
+            color: [0, 128, 0, 1], // Green color with full opacity
+            size: "12px", // Adjust the size of the circle as needed
+            outline: {
+                color: [255, 255, 255, 1], // White outline color with full opacity
+                width: 1
+            }
+        };
+
+        // Create the renderer using the green circle symbol
+        var circleRenderer = {
+            type: "simple",
+            symbol: circleSymbol
+        };
+        */
+
+        // Ajouter des menus déroulants pour les critères de symbologie
+        const communeCriteria = ["Par préfecture", "Par commune/arrondissement", "Par surface"];
+        const populationCriteria = ["Population 2004", "Population 1994", "Ratio 1994/2004"];
+        const communeFilterLabel = document.createElement("div");
+        communeFilterLabel.innerHTML = "<b>Affichage des communes  :</b>";
+        view.ui.add(communeFilterLabel, {
+            position: "top-left",
+            index: 3
+        });
+
+        const communeSelect = document.createElement("select");
+        communeCriteria.forEach(function (criterion) {
+            let option = document.createElement("option");
+            option.value = criterion;
+            option.innerHTML = criterion;
+            communeSelect.appendChild(option);
+        });
+        view.ui.add(communeSelect, {
+            position: "top-left",
+            index: 4
+        });
+        const PopFilterLabel = document.createElement("div");
+        PopFilterLabel.innerHTML = "<b> Affichage de la population :</b>";
+        view.ui.add(PopFilterLabel, {
+            position: "top-left",
+            index: 5
+        });
+        const populationSelect = document.createElement("select");
+        populationCriteria.forEach(function (criterion) {
+            let option = document.createElement("option");
+            option.value = criterion;
+            option.innerHTML = criterion;
+            populationSelect.appendChild(option);
+        });
+        view.ui.add(populationSelect, {
+            position: "top-left",
+            index: 6
+        });
+
+        // Fonction pour créer des renderers
+        function createRenderer(field, classes) {
+            return new ClassBreaksRenderer({
+                field: field,
+                classBreakInfos: classes.map((cls, index) => ({
+                    minValue: cls.min,
+                    maxValue: cls.max,
+                    symbol: new SimpleFillSymbol({
+                        color: cls.color,
+                        outline: {
+                            color: "black",
+                            width: 1
+                        }
+                    }),
+                    label: cls.label
+                }))
+            });
+        }
+
+
+        // Définir les classes pour la symbologie des populations
+        const populationClasses = [
+            { min: 0, max: 10000, color: "rgba(255, 255, 204, 0.8)", label: "< 10K" },
+            { min: 10000, max: 50000, color: "rgba(255, 237, 160, 0.8)", label: "10K - 50K" },
+            { min: 50000, max: 100000, color: "rgba(254, 217, 118, 0.8)", label: "50K - 100K" },
+            { min: 100000, max: 300000, color: "rgba(254, 178, 76, 0.8)", label: "100K - 300K" },
+            { min: 300000, max: 1000000, color: "rgba(253, 141, 60, 0.8)", label: "> 300K" }
+        ];
+
+        // Fonction pour appliquer le renderer selon le critère sélectionné
+        function applyCommuneRenderer(criterion) {
+            switch (criterion) {
+                case "Par préfecture":
+                    communesLayer.renderer = createRandomRenderer("PREFECTURE");
+                    break;
+                case "Par commune/arrondissement":
+                    communesLayer.renderer = createRandomRenderer("COMMUNE_AR");
+                    break;
+                case "Par surface":
+                    communesLayer.renderer = createRenderer("Shape_Area", surfaceClasses);
+                    break;
+            }
+        }
+
+        function applyPopulationRenderer(criterion) {
+            switch (criterion) {
+                case "Population 2004":
+                    populationLayer.renderer = createRenderer("TOTAL2004", populationClasses);
+                    break;
+                case "Population 1994":
+                    populationLayer.renderer = createRenderer("TOTAL1994", populationClasses);
+                    break;
+                case "Ratio 1994/2004":
+                    populationLayer.renderer = createChartRenderer("RATIO1994_2004");
+                    break;
+            }
+        }
+
+        // Ajouter des listeners pour les menus déroulants
+        communeSelect.addEventListener('change', function (event) {
+            applyCommuneRenderer(event.target.value);
+        });
+
+        populationSelect.addEventListener('change', function (event) {
+            applyPopulationRenderer(event.target.value);
+        });
+
+        // Appliquer les renderers initiaux
+        applyCommuneRenderer(communeSelect.value);
+        applyPopulationRenderer(populationSelect.value);
+
+        // Fonction pour créer un renderer aléatoire
+        function createRandomRenderer(field) {
+            const uniqueValues = new Set();
+            communesLayer.queryFeatures().then(function (result) {
+                result.features.forEach(function (feature) {
+                    uniqueValues.add(feature.attributes[field]);
+                });
+
+                const uniqueValueInfos = [];
+                uniqueValues.forEach(function (value) {
+                    uniqueValueInfos.push({
+                        value: value,
+                        symbol: new SimpleFillSymbol({
+                            color: getRandomColor(),
+                            outline: {
+                                color: "black",
+                                width: 1
+                            }
+                        }),
+                        label: value
+                    });
+                });
+
+                const renderer = new SimpleRenderer({
+                    type: "unique-value",
+                    field: field,
+                    uniqueValueInfos: uniqueValueInfos
+                });
+
+                communesLayer.renderer = renderer;
+            });
+        }
+
+        // Fonction pour générer une couleur aléatoire
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+        // Fonction pour créer un renderer avec des diagrammes
+        function createChartRenderer(field) {
+            return new SimpleRenderer({
+                symbol: new SimpleMarkerSymbol({
+                    type: "simple-marker",
+                    size: 10,
+                    color: "white",
+                    outline: {
+                        width: 1,
+                        color: "black"
+                    }
+                }),
+                visualVariables: [{
+                    type: "size",
+                    field: field,
+                    minDataValue: 0,
+                    maxDataValue: 1,
+                    minSize: 5,
+                    maxSize: 20
+                }, {
+                    type: "color",
+                    field: field,
+                    stops: [
+                        { value: 0, color: "blue" },
+                        { value: 1, color: "red" }
+                    ]
+                }]
+            });
+        }
+    });
+</script>

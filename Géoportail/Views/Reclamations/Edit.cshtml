@@ -1,0 +1,91 @@
+﻿@model Géoportail.Models.Reclamatiosn
+
+@{
+    ViewData["Title"] = "Edit";
+}
+
+<h1>Modifier une reclamation</h1>
+
+<div id="EditerReclamationsMap" style="padding: 0;margin: 0;width: 90%;height: 400px;">  </div>
+
+<script>
+
+    require(["esri/config", "esri/Map", "esri/views/MapView", "esri/geometry/Extent",
+        "esri/widgets/BasemapToggle", "esri/widgets/BasemapGallery",
+        "esri/layers/FeatureLayer", "esri/layers/TileLayer", "esri/widgets/LayerList", "esri/PopupTemplate", "esri/rest/support/Query"],
+        function (esriConfig, Map, MapView, Extent, BasemapToggle, BasemapGallery,
+            FeatureLayer, TileLayer, LayerList, PopupTemplate, Query) {
+
+            esriConfig.apiKey = "AAPK2a40bb133b76403a8053dc2c7f80e3a8aDhHwrabkJFzbubBVTxXEYlNwzIKE1v0151BOTn1Z70kAt1SJBXorHXmyKFRiE-V";
+
+
+            const map = new Map({
+                basemap: "arcgis-topographic"
+            });
+
+            const view = new MapView({
+                map: map,
+                container: "EditerReclamationsMap",
+                zoom: 13,
+                center: [-7.62, 33.59]
+            });
+
+
+
+            const Reclamationslayer3 = new FeatureLayer("http://localhost:6080/arcgis/rest/services/Projet_DEV_SIG2_Acrgis_SDK_API/Reclamations/FeatureServer");
+            // const Reclamationslayer = new FeatureLayer("http://localhost:6080/arcgis/rest/services/Projet_DEV_SIG2_Acrgis_SDK_API/Communes_Casa_projet/MapServer");
+
+            map.add(Reclamationslayer3);
+
+
+         const query = new Query();
+             query.where = "Objectid='@Html.DisplayFor(model => model.Objectid)'";
+             query.returnGeometry = true;
+            Reclamationslayer3.queryFeatures(query)
+             .then((results) => {
+             view.graphics.addMany(results.features);
+             view.goTo(results.features);
+             }).catch((error) => {
+             console.log(error.error);
+             });
+
+        });
+</script>
+
+<h4>Reclamations</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Edit">
+            <div class="form-group">
+                <input type="hidden" asp-for="Objectid" />
+                <label asp-for="Objet" class="control-label"></label>
+                <input asp-for="Objet" class="form-control" />
+                <span asp-validation-for="Objet" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Message" class="control-label"></label>
+                <input asp-for="Message" class="form-control" />
+                <span asp-validation-for="Message" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="DemarcheD" class="control-label"></label>
+                <input asp-for="DemarcheD" class="form-control" />
+                <span asp-validation-for="DemarcheD" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Mail" class="control-label"></label>
+                <input asp-for="Mail" class="form-control" />
+                <span asp-validation-for="Mail" class="text-danger"></span>
+            </div>
+           
+            <div class="form-group">
+                <input type="submit" value="Save" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Revenir à la liste </a>
+</div>
